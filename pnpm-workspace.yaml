@@ -36,3 +36,4 @@ minimumReleaseAgeExclude:
   - storybook@10.6.2
   - vitest@5.0.4
   - typescript-eslint@8.71.2
+  - stellar-id-client@0.1.0
