@@ -39,7 +39,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "stellar-id-client": "workspace:^0.1.0"
+    "stellar-id-client": "^0.1.0"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
