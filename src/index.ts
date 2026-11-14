@@ -12,6 +12,7 @@ export {
   SessionProvider,
   useSession,
   useSessionActions,
+  useSessionSigner,
   useIdentity,
   useIdentityStatus,
 } from "./session/SessionProvider.js";
@@ -25,8 +26,19 @@ export { useDidDocument, useCredential } from "./hooks/useStellarQueries.js";
 export type { QueryStatus, QueryResult } from "./hooks/useStellarQueries.js";
 export { IdentityLogin } from "./components/IdentityLogin.js";
 export type { IdentityLoginProps } from "./components/IdentityLogin.js";
-export { IdentityProfile, IdentityProfileView } from "./components/IdentityProfile.js";
-export type { IdentityProfileProps } from "./components/IdentityProfile.js";
+export {
+  IdentityProfile,
+  IdentityProfileView,
+  MAX_VERIFICATION_METHODS,
+  MAX_SERVICES,
+  MAX_FRAGMENT_ID_BYTES,
+  MAX_SERVICE_KIND_BYTES,
+  MAX_SERVICE_ENDPOINT_BYTES,
+  extractFragmentId,
+  validateNewKey,
+  validateNewService,
+} from "./components/IdentityProfile.js";
+export type { IdentityProfileProps, UpdateIdentityFn } from "./components/IdentityProfile.js";
 export { CredentialBadge } from "./components/CredentialBadge.js";
 export type { CredentialBadgeStatus, CredentialBadgeProps } from "./components/CredentialBadge.js";
 export { withAuth } from "./components/withAuth.js";
@@ -48,6 +60,11 @@ export {
 export type {
   Signer,
   NetworkConfig,
+  IdentityPatch,
+  MutateOptions,
+  NewKey,
+  NewService,
+  TxResult,
   VerifiableCredential,
   VerificationResult,
   ResolutionResult,
