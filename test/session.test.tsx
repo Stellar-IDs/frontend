@@ -7,6 +7,7 @@ import {
   useIdentityStatus,
   useSession,
   useSessionActions,
+  useSessionSigner,
 } from "../src/index.js";
 import type { SessionConfig } from "../src/index.js";
 import { fakeSigner } from "./helpers.js";
@@ -31,17 +32,23 @@ function wrapper(config: SessionConfig) {
 const connected = () => ({ createSigner: () => fakeSigner() });
 
 describe("SessionProvider", () => {
-  it("connects a wallet", async () => {
+  it("connects a wallet and exposes the session signer", async () => {
     const { result } = renderHook(
-      () => ({ actions: useSessionActions(), session: useSession() }),
+      () => ({
+        actions: useSessionActions(),
+        session: useSession(),
+        signer: useSessionSigner(),
+      }),
       { wrapper: wrapper(connected()) },
     );
     expect(result.current.session.status).toBe("disconnected");
+    expect(result.current.signer).toBeNull();
     await act(async () => {
       await result.current.actions.connect();
     });
     expect(result.current.session.status).toBe("connected");
     expect(result.current.session.address).toBe("GTESTADDRESS");
+    expect(result.current.signer).not.toBeNull();
   });
 
   it("authenticates through signIn and exposes identity selectors", async () => {
@@ -93,10 +100,11 @@ describe("SessionProvider", () => {
     expect(result.current.session.error?.message).toMatch(/connect/i);
   });
 
-  it("disconnect resets the session", async () => {
+  it("disconnect resets the session and clears the signer", async () => {
     function Harness() {
       const actions = useSessionActions();
       const session = useSession();
+      const signer = useSessionSigner();
       return (
         <div>
           <button type="button" onClick={() => void actions.signIn()}>
@@ -105,7 +113,9 @@ describe("SessionProvider", () => {
           <button type="button" onClick={() => actions.disconnect()}>
             bye
           </button>
-          <output data-testid="state">{`${session.status}|${session.did ?? "-"}`}</output>
+          <output data-testid="state">
+            {`${session.status}|${session.did ?? "-"}|${signer === null ? "no-signer" : "has-signer"}`}
+          </output>
         </div>
       );
     }
@@ -118,10 +128,11 @@ describe("SessionProvider", () => {
       screen.getByRole("button", { name: "go" }).click();
     });
     expect(screen.getByTestId("state").textContent).toContain("authenticated");
+    expect(screen.getByTestId("state").textContent).toContain("has-signer");
     act(() => {
       screen.getByRole("button", { name: "bye" }).click();
     });
-    expect(screen.getByTestId("state").textContent).toBe("disconnected|-");
+    expect(screen.getByTestId("state").textContent).toBe("disconnected|-|no-signer");
   });
 
   it("throws outside a provider", () => {
@@ -129,6 +140,11 @@ describe("SessionProvider", () => {
       useSession();
       return null;
     }
+    function NopeSigner() {
+      useSessionSigner();
+      return null;
+    }
     expect(() => render(<Nope />)).toThrow("SessionProvider");
+    expect(() => render(<NopeSigner />)).toThrow("SessionProvider");
   });
 });

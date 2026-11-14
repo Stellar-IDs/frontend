@@ -73,6 +73,7 @@ export interface SessionConfig {
 
 const SessionStateContext = createContext<SessionState | null>(null);
 const SessionActionsContext = createContext<SessionActions | null>(null);
+const SessionSignerContext = createContext<{ signer: Signer | null } | null>(null);
 
 /**
  * Provide wallet connection + identity session state to the tree.
@@ -95,6 +96,7 @@ export function SessionProvider({
     did: null,
     error: null,
   });
+  const [signer, setSigner] = useState<Signer | null>(null);
   // Ref mirrors the connected signer so signIn can chain connect→sign-in
   // without waiting for a re-render.
   const signerRef = useRef<Signer | null>(null);
@@ -108,10 +110,12 @@ export function SessionProvider({
       const next = await config.createSigner();
       const address = await next.publicKey();
       signerRef.current = next;
+      setSigner(next);
       setState({ status: "connected", address, did: null, error: null });
       return { signer: next, address };
     } catch (err) {
       signerRef.current = null;
+      setSigner(null);
       setState({
         status: "error",
         address: null,
@@ -138,18 +142,18 @@ export function SessionProvider({
       }
       active = connected.signer;
     }
-    const signer: Signer = active;
+    const activeSigner: Signer = active;
     setState((prev) => ({ ...prev, status: "authenticating", error: null }));
     try {
-      const signerAddress = await signer.publicKey();
+      const signerAddress = await activeSigner.publicKey();
       const domain =
         config.domain ??
         (typeof window === "undefined" ? "unknown" : window.location.hostname);
       const challenge = createChallenge({ domain, address: signerAddress });
-      if (signer.signMessage === undefined) {
+      if (activeSigner.signMessage === undefined) {
         throw new StellarIdError("The connected wallet cannot sign messages.", "WALLET");
       }
-      const signature = await signer.signMessage(challengeBytes(challenge));
+      const signature = await activeSigner.signMessage(challengeBytes(challenge));
       const auth = await verifyChallengeResponse(
         {
           challenge,
@@ -174,15 +178,19 @@ export function SessionProvider({
 
   const disconnect = useCallback(() => {
     signerRef.current = null;
+    setSigner(null);
     setState({ status: "disconnected", address: null, did: null, error: null });
   }, []);
 
   const actions = useMemo(() => ({ connect, disconnect, signIn }), [connect, disconnect, signIn]);
+  const signerValue = useMemo(() => ({ signer }), [signer]);
 
   return (
     <SessionStateContext.Provider value={state}>
       <SessionActionsContext.Provider value={actions}>
-        {children}
+        <SessionSignerContext.Provider value={signerValue}>
+          {children}
+        </SessionSignerContext.Provider>
       </SessionActionsContext.Provider>
     </SessionStateContext.Provider>
   );
@@ -212,6 +220,19 @@ export function useSessionActions(): SessionActions {
     throw new Error("useSessionActions must be used under a SessionProvider");
   }
   return actions;
+}
+
+/**
+ * Connected wallet signer (null when disconnected).
+ *
+ * @returns The active session signer, if connected; must be used under a `SessionProvider`.
+ */
+export function useSessionSigner(): Signer | null {
+  const context = useContext(SessionSignerContext);
+  if (context === null) {
+    throw new Error("useSessionSigner must be used under a SessionProvider");
+  }
+  return context.signer;
 }
 
 /**

@@ -136,8 +136,8 @@ relationship.
 | Component | What it renders | Notes |
 |---|---|---|
 | `IdentityLogin` | A "Sign in with Stellar" button that connects and signs in, and a sign-out control once authenticated | Props: `label`, `onAuthenticated(did)`. Progress and errors are announced through an `aria-live` region. |
-| `IdentityProfile` | The signed-in (or given) DID's document: verification methods, relationships and services | Props: `did`, `network`, `resolve` (injectable for tests). Read-only. |
-| `IdentityProfileView` | The presentational half of `IdentityProfile`, for when you already hold a resolution result | Use in stories and tests. |
+| `IdentityProfile` | The signed-in (or given) DID's document: verification methods, relationships and services, with optional key/service management | Props: `did`, `network`, `signer`, `editable`, `resolve`, `update`, `onUpdated` (`resolve` and `update` are injectable for tests). Automatically uses the authenticated session signer for the session's own DID; requires confirmation before destructive removals and enforces `stellar-id-core` limits. |
+| `IdentityProfileView` | The session-independent half of `IdentityProfile` for explicit DIDs, stories and tests | Pass `signer` (and optional `update`) to enable editing without a `SessionProvider`. |
 | `CredentialBadge` | A status pill for a credential: **Valid**, **Revoked**, **Expired**, or **Unknown** | Props: `credential`, `network`, `refreshToken`, `verify` (injectable). Status is conveyed as text, not colour alone. |
 
 ## Hooks
@@ -146,6 +146,7 @@ relationship.
 |---|---|---|
 | `useSession()` | `{ status, address, did, error }` | Current session state |
 | `useSessionActions()` | `{ connect, signIn, disconnect }` | Drive the session |
+| `useSessionSigner()` | `Signer \| null` | Connected session signer (`null` when disconnected) |
 | `useIdentity()` | `{ did, address, status }` | The identity slice of the session |
 | `useIdentityStatus()` | The status string plus booleans such as `isAuthenticated` | Cheap checks for rendering |
 | `useDidDocument(did, opts?)` | `{ data, error, status, refetch }` | Resolve a DID document; cached and de-duplicated |
@@ -276,7 +277,6 @@ for the three main components, the Next.js demo and its e2e tests.
 | Issue | Idea |
 |---|---|
 | frontend-1 | Social / passkey login fallback |
-| frontend-2 | Profile editing UI: manage keys and services |
 | frontend-3 | Theme customization: presets, provider API, high contrast |
 | frontend-4 | Accessibility audit (WCAG 2.2 AA) |
 
